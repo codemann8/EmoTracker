@@ -131,11 +131,12 @@
 
                                             <!-- Badges host -->
                                             <ItemsControl ItemsSource="{Binding Location.Badges}"
-                                                          VerticalAlignment="Bottom"
-                                                          HorizontalAlignment="Right">
+                                                          VerticalAlignment="Top"
+                                                          HorizontalAlignment="Left"
+                                                          Margin="{Binding DataContext.BadgeMargin, ElementName=MinifiedLocation, Converter={x:Static converters:ThicknessConverter.Instance}}">
                                                 <ItemsControl.ItemsPanel>
                                                     <ItemsPanelTemplate>
-                                                        <Grid Margin="{Binding DataContext.BadgeMargin, ElementName=MinifiedLocation, Converter={x:Static converters:ThicknessConverter.Instance}}"/>
+                                                        <Grid/>
                                                     </ItemsPanelTemplate>
                                                 </ItemsControl.ItemsPanel>
                                                 <ItemsControl.ItemTemplate>
