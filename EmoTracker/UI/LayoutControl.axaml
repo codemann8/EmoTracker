@@ -40,7 +40,9 @@
                       MaxWidth="{Binding MaxWidth, Converter={x:Static converters:NegativeToInfinityDoubleConverter.Instance}}"
                       MaxHeight="{Binding MaxHeight, Converter={x:Static converters:NegativeToInfinityDoubleConverter.Instance}}"
                       Effect="{Binding DropShadow, Converter={x:Static converters:BoolToDropShadowEffectConverter.Instance}}">
-                    <ContentControl Content="{Binding Layout.Root}" />
+                    <ContentControl Content="{Binding Layout.Root}"
+                                    HorizontalContentAlignment="Stretch"
+                                    VerticalContentAlignment="Stretch" />
                 </Grid>
             </LayoutTransformControl>
         </DataTemplate>
@@ -134,7 +136,11 @@
                     <ItemsControl ItemsSource="{Binding Children}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <DockPanel LastChildFill="True" />
+                                <!-- MinHeight=Viewport.Height ensures the DockPanel fills the
+                                     ScrollViewer's visible area in Avalonia, where Hidden
+                                     scrollbars give content infinite measurement height. -->
+                                <DockPanel LastChildFill="True"
+                                           MinHeight="{Binding Viewport.Height, RelativeSource={RelativeSource AncestorType=ScrollViewer}, FallbackValue=0}" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemContainerTheme>
@@ -343,20 +349,20 @@
                 <LayoutTransformControl.LayoutTransform>
                     <ScaleTransform ScaleX="{Binding EffectiveScale}" ScaleY="{Binding EffectiveScale}" />
                 </LayoutTransformControl.LayoutTransform>
-                <Grid Width="{Binding Width, Converter={x:Static converters:NegativeToNaNDoubleConverter.Instance}}"
-                      Height="{Binding Height, Converter={x:Static converters:NegativeToNaNDoubleConverter.Instance}}"
-                      IsHitTestVisible="{Binding HitTestVisible}"
-                      MinWidth="{Binding MinWidth, Converter={x:Static converters:NegativeToZeroDoubleConverter.Instance}}"
-                      MinHeight="{Binding MinHeight, Converter={x:Static converters:NegativeToZeroDoubleConverter.Instance}}"
-                      MaxWidth="{Binding MaxWidth, Converter={x:Static converters:NegativeToInfinityDoubleConverter.Instance}}"
-                      MaxHeight="{Binding MaxHeight, Converter={x:Static converters:NegativeToInfinityDoubleConverter.Instance}}"
-                      Effect="{Binding DropShadow, Converter={x:Static converters:BoolToDropShadowEffectConverter.Instance}}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-                    <!-- Header bar -->
-                    <Grid Grid.Row="0"
+                <!-- DockPanel instead of Grid-with-star-rows: in Avalonia a star row
+                     inside an infinite-height context collapses to 0, causing the
+                     group Background to not render. DockPanel sizes naturally. -->
+                <DockPanel Width="{Binding Width, Converter={x:Static converters:NegativeToNaNDoubleConverter.Instance}}"
+                           Height="{Binding Height, Converter={x:Static converters:NegativeToNaNDoubleConverter.Instance}}"
+                           Background="{Binding Background, Converter={x:Static converters:StringToBrushConverter.Instance}, TargetNullValue=#66212121, FallbackValue=#66212121}"
+                           IsHitTestVisible="{Binding HitTestVisible}"
+                           MinWidth="{Binding MinWidth, Converter={x:Static converters:NegativeToZeroDoubleConverter.Instance}}"
+                           MinHeight="{Binding MinHeight, Converter={x:Static converters:NegativeToZeroDoubleConverter.Instance}}"
+                           MaxWidth="{Binding MaxWidth, Converter={x:Static converters:NegativeToInfinityDoubleConverter.Instance}}"
+                           MaxHeight="{Binding MaxHeight, Converter={x:Static converters:NegativeToInfinityDoubleConverter.Instance}}"
+                           Effect="{Binding DropShadow, Converter={x:Static converters:BoolToDropShadowEffectConverter.Instance}}"
+                           LastChildFill="True">
+                    <Grid DockPanel.Dock="Top"
                           Background="{Binding HeaderBackground, Converter={x:Static converters:StringToBrushConverter.Instance}, FallbackValue=#212121}">
                         <Grid Margin="10,5">
                             <Grid.ColumnDefinitions>
@@ -370,19 +376,15 @@
                                             IsVisible="{Binding HeaderContent, Converter={x:Static converters:NullToFalseConverter.Instance}}" />
                         </Grid>
                     </Grid>
-                    <!-- Content area -->
-                    <Grid Grid.Row="1"
-                          Background="{Binding Background, Converter={x:Static converters:StringToBrushConverter.Instance}, FallbackValue=#66212121}">
-                        <ItemsControl ItemsSource="{Binding Items}" Margin="5"
-                                      ItemContainerTheme="{StaticResource StretchItemContainer}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <Grid />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-                    </Grid>
-                </Grid>
+                    <ItemsControl ItemsSource="{Binding Items}" Margin="5"
+                                  ItemContainerTheme="{StaticResource StretchItemContainer}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Grid />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </DockPanel>
             </LayoutTransformControl>
         </DataTemplate>
 
