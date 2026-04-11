@@ -137,8 +137,8 @@ namespace EmoTracker.UI.Converters
             bool isWidth = string.Equals(parameter?.ToString(), "Width", StringComparison.OrdinalIgnoreCase);
             Bitmap bitmap = values.Count > 2 ? values[2] as Bitmap : null;
 
-            // If this dimension is explicitly specified, use it directly.
-            if (myDim > 0 && !double.IsNaN(myDim))
+            // If this dimension is explicitly specified (including zero), use it directly.
+            if (!double.IsNaN(myDim) && myDim >= 0)
                 return myDim;
 
             // Only the other dimension was specified: scale proportionally from the image aspect ratio.
