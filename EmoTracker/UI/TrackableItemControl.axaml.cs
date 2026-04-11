@@ -52,9 +52,19 @@ namespace EmoTracker.UI
             set => SetValue(IconWidthProperty, value);
         }
 
-        // ---- UseAlphaHitTest ----
-        public static readonly StyledProperty<bool> UseAlphaHitTestProperty =
-            AvaloniaProperty.Register<TrackableItemControl, bool>(nameof(UseAlphaHitTest), defaultValue: true);
+        // ---- UseAlphaHitTest (attached, inherits) ----
+        // When true, the item's InputMaskingImage uses per-pixel alpha hit testing.
+        // Transparent pixels pass through to items underneath when overlapping,
+        // but still catch clicks when nothing interactive is behind.
+        public static readonly AttachedProperty<bool> UseAlphaHitTestProperty =
+            AvaloniaProperty.RegisterAttached<TrackableItemControl, AvaloniaObject, bool>(
+                "UseAlphaHitTest", defaultValue: true, inherits: true);
+
+        public static bool GetUseAlphaHitTest(AvaloniaObject obj) =>
+            obj.GetValue(UseAlphaHitTestProperty);
+
+        public static void SetUseAlphaHitTest(AvaloniaObject obj, bool value) =>
+            obj.SetValue(UseAlphaHitTestProperty, value);
 
         public bool UseAlphaHitTest
         {

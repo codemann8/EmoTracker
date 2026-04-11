@@ -28,8 +28,7 @@
                                         Margin="{Binding DataContext.ItemMargin, RelativeSource={RelativeSource AncestorType=local:ItemGridControl}, Converter={x:Static converters:StringToThicknessConverter.Instance}}"
                                         IconWidth="{Binding DataContext.ItemWidth, RelativeSource={RelativeSource AncestorType=local:ItemGridControl}}"
                                         IconHeight="{Binding DataContext.ItemHeight, RelativeSource={RelativeSource AncestorType=local:ItemGridControl}}"
-                                        BadgeFontSize="{Binding DataContext.BadgeFontSize, RelativeSource={RelativeSource AncestorType=local:ItemGridControl}}"
-                                        UseAlphaHitTest="False" />
+                                        local:TrackableItemControl.BadgeFontSize="{Binding DataContext.BadgeFontSize, RelativeSource={RelativeSource AncestorType=local:ItemGridControl}}" />
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
