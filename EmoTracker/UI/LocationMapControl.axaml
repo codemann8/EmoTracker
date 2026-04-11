@@ -72,11 +72,12 @@
                             <controls:InputMaskingImage Name="MapImage"
                                                         UseAlphaHitTest="False"
                                                         Source="{Binding Image, Converter={x:Static converters:ImageReferenceConverter.Instance}}"/>
-                            <ItemsControl ItemsSource="{Binding Locations}">
+                            <ItemsControl ItemsSource="{Binding Locations}" ClipToBounds="False">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <Canvas Width="{Binding #MapImage.Source.Size.Width}"
-                                                Height="{Binding #MapImage.Source.Size.Height}"/>
+                                                Height="{Binding #MapImage.Source.Size.Height}"
+                                                ClipToBounds="False"/>
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemContainerTheme>
