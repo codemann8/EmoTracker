@@ -1,32 +1,47 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Rendering;
 using EmoTracker.UI.Media.Utility;
 
 namespace EmoTracker.UI.Controls
 {
-    // Avalonia version: per-pixel hit testing uses the precomputed alpha mask from IconUtility.
-    // The correct HitTestCore override will be wired up in Phase 6 once the Avalonia control
-    // hierarchy is fully understood. For now, pointer event filtering handles transparent areas.
-    public class InputMaskingImage : Image
+    public class InputMaskingImage : Image, ICustomHitTest
     {
+        public static readonly StyledProperty<bool> UseAlphaHitTestProperty =
+            AvaloniaProperty.Register<InputMaskingImage, bool>(nameof(UseAlphaHitTest), defaultValue: true);
+
+        public bool UseAlphaHitTest
+        {
+            get => GetValue(UseAlphaHitTestProperty);
+            set => SetValue(UseAlphaHitTestProperty, value);
+        }
+
+        public bool HitTest(Avalonia.Point point)
+        {
+            if (!UseAlphaHitTest)
+                return Bounds.Contains(point);
+            return HitTestAlphaMask(point);
+        }
+
         protected override void OnPointerMoved(PointerEventArgs e)
         {
-            if (!HitTestAlphaMask(e.GetPosition(this)))
+            if (UseAlphaHitTest && !HitTestAlphaMask(e.GetPosition(this)))
                 return;
             base.OnPointerMoved(e);
         }
 
         protected override void OnPointerPressed(PointerPressedEventArgs e)
         {
-            if (!HitTestAlphaMask(e.GetPosition(this)))
+            if (UseAlphaHitTest && !HitTestAlphaMask(e.GetPosition(this)))
                 return;
             base.OnPointerPressed(e);
         }
 
         protected override void OnPointerReleased(PointerReleasedEventArgs e)
         {
-            if (!HitTestAlphaMask(e.GetPosition(this)))
+            if (UseAlphaHitTest && !HitTestAlphaMask(e.GetPosition(this)))
                 return;
             base.OnPointerReleased(e);
         }

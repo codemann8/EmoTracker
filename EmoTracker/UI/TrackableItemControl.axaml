@@ -21,6 +21,7 @@
                         <controls:InputMaskingImage
                             HorizontalAlignment="Left"
                             VerticalAlignment="Top"
+                            UseAlphaHitTest="{Binding UseAlphaHitTest, RelativeSource={RelativeSource AncestorType=local:TrackableItemControl}}"
                             Source="{Binding Icon, Converter={x:Static converters:ImageReferenceConverter.Instance}}">
                             <controls:InputMaskingImage.Width>
                                 <MultiBinding Converter="{x:Static converters:IconDimensionMultiConverter.Instance}" ConverterParameter="Width">

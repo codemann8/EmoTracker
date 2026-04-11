@@ -70,6 +70,7 @@
                     <DataTemplate DataType="locations:Map">
                         <Grid Name="MapHost" Margin="25,25">
                             <controls:InputMaskingImage Name="MapImage"
+                                                        UseAlphaHitTest="False"
                                                         Source="{Binding Image, Converter={x:Static converters:ImageReferenceConverter.Instance}}"/>
                             <ItemsControl ItemsSource="{Binding Locations}">
                                 <ItemsControl.ItemsPanel>

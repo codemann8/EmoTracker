@@ -52,6 +52,16 @@ namespace EmoTracker.UI
             set => SetValue(IconWidthProperty, value);
         }
 
+        // ---- UseAlphaHitTest ----
+        public static readonly StyledProperty<bool> UseAlphaHitTestProperty =
+            AvaloniaProperty.Register<TrackableItemControl, bool>(nameof(UseAlphaHitTest), defaultValue: true);
+
+        public bool UseAlphaHitTest
+        {
+            get => GetValue(UseAlphaHitTestProperty);
+            set => SetValue(UseAlphaHitTestProperty, value);
+        }
+
         // ---- IconHeight ----
         public static readonly StyledProperty<double> IconHeightProperty =
             AvaloniaProperty.Register<TrackableItemControl, double>(nameof(IconHeight), defaultValue: 32.0);
