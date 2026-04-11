@@ -6,7 +6,8 @@
              xmlns:converters="clr-namespace:EmoTracker.UI.Converters;assembly=EmoTracker.UI"
              xmlns:data="clr-namespace:EmoTracker.Data;assembly=EmoTracker.Data"
              xmlns:layout="clr-namespace:EmoTracker.Data.Layout;assembly=EmoTracker.Data"
-             xmlns:local="clr-namespace:EmoTracker.UI">
+             xmlns:local="clr-namespace:EmoTracker.UI"
+             FontSize="12">
     <UserControl.Resources>
         <!-- In WPF, ContentPresenter.HorizontalContentAlignment defaults to Stretch.
              In Avalonia it defaults to Left, so item container ContentPresenters size
@@ -17,6 +18,17 @@
             <Setter Property="VerticalContentAlignment" Value="Stretch" />
         </ControlTheme>
     </UserControl.Resources>
+    <UserControl.Styles>
+        <!-- WPF layout containers don't clip children by default. Pack makers rely on negative
+             margins to intentionally overflow elements (e.g. close buttons positioned outside
+             their containing box). Override any Fluent theme clip-to-bounds that would break this. -->
+        <Style Selector="ItemsControl">
+            <Setter Property="ClipToBounds" Value="False"/>
+        </Style>
+        <Style Selector="LayoutTransformControl">
+            <Setter Property="ClipToBounds" Value="False"/>
+        </Style>
+    </UserControl.Styles>
     <UserControl.DataTemplates>
 
         <!-- Each DataTemplate wraps its content in a LayoutTransformControl so that the
