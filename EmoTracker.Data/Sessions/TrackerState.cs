@@ -449,6 +449,7 @@ namespace EmoTracker.Data.Sessions
                 var forkedRoot = (Location)this.Locations.Root.Fork(copy);
                 RegisterLocationTreeOnFork(this.Locations.Root, forkedRoot, copy, modelIdentityMap);
                 copy.Locations.SetRootFromFork(forkedRoot);
+                copy.Locations.ReindexFromSource(this.Locations, modelIdentityMap);
             }
 
             // ---- Maps -------------------------------------------------------

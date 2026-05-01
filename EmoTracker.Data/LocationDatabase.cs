@@ -388,6 +388,27 @@ namespace EmoTracker.Data
             if (location == null) return;
             mLocationIndex[location] = mAllLocations.Count;
             mAllLocations.Add(location);
+            if (location.HasLocalItems)
+                mVisibleLocations.Add(location);
+        }
+
+        /// <summary>
+        /// After a fork walk, reorders mAllLocations and mLocationIndex so
+        /// that the fork's indices match the source's. This ensures that
+        /// save references generated from the fork resolve correctly on reload.
+        /// </summary>
+        internal void ReindexFromSource(LocationDatabase source, Dictionary<object, object> identityMap)
+        {
+            mAllLocations.Clear();
+            mLocationIndex.Clear();
+            foreach (Location srcLoc in source.mAllLocations)
+            {
+                if (identityMap.TryGetValue(srcLoc, out object forkObj) && forkObj is Location forkLoc)
+                {
+                    mLocationIndex[forkLoc] = mAllLocations.Count;
+                    mAllLocations.Add(forkLoc);
+                }
+            }
         }
 
         /// <summary>
