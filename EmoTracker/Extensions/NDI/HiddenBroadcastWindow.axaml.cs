@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
+using Avalonia.Threading;
 using EmoTracker.Extensions;
 using Serilog;
 using System;
@@ -209,6 +210,20 @@ namespace EmoTracker.Extensions.NDI
 
             try
             {
+                // The main window's RAF fires whenever the main window's compositor
+                // renders, but the hidden window runs on an independent compositor
+                // timeline and its backing store may be stale after idle periods.
+                // Marking the NdiSendContainer dirty then yielding to
+                // DispatcherPriority.Render flushes the pending composition
+                // invalidation to the compositor server before TriggerCaptureAsync
+                // calls CreateCompositionVisualSnapshot, ensuring the snapshot
+                // reflects the current item state.
+                NDIHost.InvalidateVisual();
+                await Dispatcher.UIThread.InvokeAsync(static () => { }, DispatcherPriority.Render);
+
+                if (!_renderLoopActive)
+                    return;
+
                 await NDIHost.TriggerCaptureAsync();
             }
             catch

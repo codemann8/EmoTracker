@@ -409,9 +409,11 @@ namespace EmoTracker.Extensions.NDI
         ///
         /// For the internally-timer-driven case this is called automatically by the
         /// DispatcherTimer.  For the <see cref="UseExternalCaptureDriver"/> case
-        /// (HiddenBroadcastWindow), an external driver calls this from the main
-        /// window's RequestAnimationFrame so captures align with the compositor's
-        /// actual render cycle rather than a dead off-screen tree.
+        /// (HiddenBroadcastWindow), the method first forces a compositor re-render
+        /// via <see cref="Visual.InvalidateVisual"/> + a Render-priority dispatcher
+        /// flush so the snapshot always reflects the latest visual state, even after
+        /// long idle periods where the hidden window's compositor backing store may
+        /// have become stale.
         /// </summary>
         public async Task TriggerCaptureAsync()
         {
@@ -463,6 +465,22 @@ namespace EmoTracker.Extensions.NDI
             _captureInProgress = true;
             try
             {
+                // When an external driver calls TriggerCaptureAsync, the hidden
+                // window's compositor may not have rasterized pending visual updates
+                // yet — the main and hidden windows run independent compositor
+                // timelines, and the backing store can become stale after idle
+                // periods.  Mark this visual dirty, then yield to
+                // DispatcherPriority.Render so Avalonia flushes the composition
+                // batch to the compositor server before snapshotting.
+                if (UseExternalCaptureDriver)
+                {
+                    InvalidateVisual();
+                    await Dispatcher.UIThread.InvokeAsync(static () => { }, DispatcherPriority.Render);
+                    // Re-check in case disposal or detachment happened during the await.
+                    if (_disposed || !_attached)
+                        return;
+                }
+
                 // Runs the full composition render pipeline, including IEffect
                 // (DropShadowDirectionEffect) that ImmediateRenderer would skip.
                 using Bitmap snapshot = await compositionVisual.Compositor
