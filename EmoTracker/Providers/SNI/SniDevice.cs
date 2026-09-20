@@ -135,6 +135,18 @@ namespace EmoTracker.Providers.SNI
                     }, CreateCallOptions()).ConfigureAwait(false);
 
                     mDetectedMapping = detectResponse.MemoryMapping;
+                    // Auto mapping with no ROM loaded stays Unknown. The
+                    // device is reachable, but reads cannot succeed until a
+                    // game is booted — do not report connected or the
+                    // tracker will poll, fail, and sit in the error state.
+                    if (GetMemoryMapping() == MemoryMapping.Unknown)
+                    {
+                        Log.Debug("[SNI] {DisplayName} is reachable but memory mapping is Unknown (no ROM loaded?); not marking connected", mDisplayName);
+                        mConnected = false;
+                        ConnectionStatusChanged?.Invoke(this, false);
+                        return;
+                    }
+
                     Log.Debug("[SNI] Connected to {DisplayName}, detected mapping: {Mapping}", mDisplayName, mDetectedMapping);
                     mConnected = true;
                     ConnectionStatusChanged?.Invoke(this, true);

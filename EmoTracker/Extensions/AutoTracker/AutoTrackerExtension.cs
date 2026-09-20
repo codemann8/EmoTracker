@@ -359,6 +359,12 @@ namespace EmoTracker.Extensions.AutoTracker
 
                 InvalidateCommandAvailability();
                 NotifyPropertyChanged(nameof(SelectedProvider));
+
+                // Device list recovered after a give-up (SNI came back,
+                // FXPak re-enumerated). Resume reconnect so a later game
+                // boot can go green without a manual Stop/Start.
+                if (mActiveProvider != null && !Connected && !mbReconnecting)
+                    BeginReconnect();
             });
         }
 
@@ -437,6 +443,10 @@ namespace EmoTracker.Extensions.AutoTracker
                 return;
 
             Connected = false;
+            Error = false;
+            // Drop any in-flight poll so its deferred Error write cannot
+            // overwrite the warning state after we start reconnecting.
+            InvalidateInFlightPoll();
 
             // Respect the configured attempt budget. A budget of 0 means
             // auto-reconnect is disabled — settle straight into the normal
@@ -450,7 +460,6 @@ namespace EmoTracker.Extensions.AutoTracker
 
             mbReconnecting = true;
             Reconnecting = true;
-            Error = false;
             mReconnectAttempts = 0;
 
             // Mark every per-state segment dirty so the next post-reconnect
@@ -475,16 +484,25 @@ namespace EmoTracker.Extensions.AutoTracker
                 if (provider == null) { Dispatch.BeginInvoke(CompleteReconnect); return; }
                 if (provider.IsConnected) { Dispatch.BeginInvoke(CompleteReconnect); return; }
 
-                int maxAttempts = ApplicationSettings.Instance.AutoTrackerMaxReconnectAttempts;
-                if (mReconnectAttempts >= maxAttempts)
+                // The attempt budget applies when the device is actually
+                // gone (USB unplug, SNI down). A present device with no
+                // ROM still looks like a failed connect; giving up there
+                // leaves the icon yellow forever after the user boots a
+                // game. Keep MappingDetect-ing while a default device is
+                // selected.
+                if (provider.DefaultDevice == null)
                 {
-                    // Exhausted the attempt budget — give up and settle into
-                    // the normal disconnected state (user can Stop / restart).
-                    Dispatch.BeginInvoke(GiveUpReconnect);
+                    int maxAttempts = ApplicationSettings.Instance.AutoTrackerMaxReconnectAttempts;
+                    if (mReconnectAttempts >= maxAttempts)
+                    {
+                        Dispatch.BeginInvoke(GiveUpReconnect);
+                        return;
+                    }
+                    ++mReconnectAttempts;
                     return;
                 }
 
-                ++mReconnectAttempts;
+                mReconnectAttempts = 0;
                 await provider.ConnectAsync();
                 if (provider.IsConnected)
                     Dispatch.BeginInvoke(CompleteReconnect);
@@ -506,6 +524,7 @@ namespace EmoTracker.Extensions.AutoTracker
             mbReconnecting = false;
             Reconnecting = false;
             Connected = mActiveProvider?.IsConnected ?? false;
+            Error = false;
             MarkAllSegmentsDirty();
         }
 
@@ -520,6 +539,7 @@ namespace EmoTracker.Extensions.AutoTracker
             mbReconnecting = false;
             Reconnecting = false;
             Connected = false;
+            Error = false;
         }
 
         void MarkAllSegmentsDirty()
@@ -622,6 +642,9 @@ namespace EmoTracker.Extensions.AutoTracker
 
                 InvalidateCommandAvailability();
                 NotifyPropertyChanged(nameof(SelectedProvider));
+
+                if (CanStartAutoTracking())
+                    StartAutoTracking();
             }
         }
 
@@ -711,6 +734,8 @@ namespace EmoTracker.Extensions.AutoTracker
             {
                 await SelectedProvider.ConnectAsync();
                 ActiveProvider = SelectedProvider;
+                if (ActiveProvider != null && !ActiveProvider.IsConnected)
+                    BeginReconnect();
                 if (mState != null)
                     ((IScriptManager)mState.Scripts).InvokeStandardCallback(StandardCallback.AutoTrackerStarted);
                 return ActiveProvider != null;
@@ -792,6 +817,8 @@ namespace EmoTracker.Extensions.AutoTracker
                     {
                         await SelectedProvider.ConnectAsync();
                         ActiveProvider = SelectedProvider;
+                        if (ActiveProvider != null && !ActiveProvider.IsConnected)
+                            BeginReconnect();
                         if (mState != null)
                             ((IScriptManager)mState.Scripts).InvokeStandardCallback(StandardCallback.AutoTrackerStarted);
                     }
@@ -833,9 +860,14 @@ namespace EmoTracker.Extensions.AutoTracker
         {
             if (mActiveUpdateTask != null)
                 mActiveUpdateTask.Wait(1000);
+            InvalidateInFlightPoll();
+        }
+
+        void InvalidateInFlightPoll()
+        {
             mActiveUpdateTask = null;
             // Invalidate any in-flight poll's deferred Error write so a
-            // finishing cycle cannot return to Error after Stop.
+            // finishing cycle cannot return to Error after Stop or Reconnect.
             unchecked { ++mUpdateGeneration; }
         }
 
@@ -915,8 +947,14 @@ namespace EmoTracker.Extensions.AutoTracker
                         {
                             if (generation != mUpdateGeneration)
                                 return;
-                            Error = bError;
                             mActiveUpdateTask = null;
+                            // Reconnect / armed-but-disconnected is a
+                            // warning, not an error. A poll that ran into
+                            // a lost mapping or dropped device must not
+                            // leave Error set on top of that state.
+                            if (mbReconnecting || !Connected || mActiveProvider == null)
+                                return;
+                            Error = bError;
                         });
                     }
                 });

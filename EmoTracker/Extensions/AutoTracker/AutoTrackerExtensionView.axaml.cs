@@ -122,15 +122,12 @@ namespace EmoTracker.Extensions.AutoTracker
                 return;
             }
 
-            if (_extension.Error)
-            {
-                StopPulse();
-                icon.Foreground = SolidColorBrush.Parse(ApplicationColors.Instance.Status_Generic_Error);
-            }
-            else if (_extension.Reconnecting)
+            if (_extension.Reconnecting)
             {
                 // Transient warning while the connection heals in the
-                // background instead of stopping outright.
+                // background instead of stopping outright. Wins over Error
+                // so a finishing failed poll cannot paint the icon red
+                // while we are already in the warning state.
                 StopPulse();
                 icon.Foreground = SolidColorBrush.Parse(ApplicationColors.Instance.Status_Generic_Warning);
             }
@@ -138,6 +135,11 @@ namespace EmoTracker.Extensions.AutoTracker
             {
                 StopPulse();
                 icon.Foreground = SolidColorBrush.Parse(ApplicationColors.Instance.Status_Generic_Warning);
+            }
+            else if (_extension.Error)
+            {
+                StopPulse();
+                icon.Foreground = SolidColorBrush.Parse(ApplicationColors.Instance.Status_Generic_Error);
             }
             else if (_extension.ActiveProvider != null)
             {
