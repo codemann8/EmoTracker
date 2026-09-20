@@ -770,6 +770,7 @@ namespace EmoTracker.Extensions.AutoTracker
             CancelReconnect();
             bool bWasActive = ActiveProvider != null;
             ActiveProvider = null;
+            Error = false;
 
             if (bWasActive && mState != null)
                 ((IScriptManager)mState.Scripts).InvokeStandardCallback(StandardCallback.AutoTrackerStopped);
@@ -805,6 +806,7 @@ namespace EmoTracker.Extensions.AutoTracker
 
         System.Timers.Timer mUpdateTimer;
         Task mActiveUpdateTask = null;
+        int mUpdateGeneration;
 
         void BootTimer()
         {
@@ -832,6 +834,9 @@ namespace EmoTracker.Extensions.AutoTracker
             if (mActiveUpdateTask != null)
                 mActiveUpdateTask.Wait(1000);
             mActiveUpdateTask = null;
+            // Invalidate any in-flight poll's deferred Error write so a
+            // finishing cycle cannot return to Error after Stop.
+            unchecked { ++mUpdateGeneration; }
         }
 
         private void UpdateMemoryHooks(object sender, EventArgs e)
@@ -880,6 +885,7 @@ namespace EmoTracker.Extensions.AutoTracker
                     return;
                 }
 
+                int generation = mUpdateGeneration;
                 mActiveUpdateTask = Task.Run(() =>
                 {
                     bool bError = false;
@@ -907,6 +913,8 @@ namespace EmoTracker.Extensions.AutoTracker
                     {
                         Dispatch.BeginInvoke(() =>
                         {
+                            if (generation != mUpdateGeneration)
+                                return;
                             Error = bError;
                             mActiveUpdateTask = null;
                         });
