@@ -4,6 +4,7 @@ using EmoTracker.Data.Core.DataModel;
 using EmoTracker.Data.JSON;
 using EmoTracker.Data.Media;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -136,11 +137,22 @@ namespace EmoTracker.Data.Items
         /// whenever the displayed icon changes. Public so the same trigger can be
         /// invoked manually (e.g. from external code that updates derived state).
         /// </summary>
+        /// <summary>
+        /// Raised when the icon actually on display changes. Pack load sets
+        /// icons before the window is up, so listeners that prefetch should
+        /// ignore the event until the visible layout has been shown.
+        /// </summary>
+        public static event Action<ImageReference> DisplayedIconChanged;
+
         public void InvalidateAccessibility()
         {
             // Phase 6 step 11: prefer the owning state's LocationDatabase.
             var locDb = (this.OwnerState as Sessions.TrackerState)?.Locations;
             locDb?.RefreshAccessibility();
+
+            var icon = Icon;
+            if (icon != null)
+                DisplayedIconChanged?.Invoke(icon);
         }
 
         // ---------------------------------------------------------- Fork

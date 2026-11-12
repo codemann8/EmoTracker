@@ -103,12 +103,32 @@ namespace EmoTracker.Core.Threading
         }
 
         /// <summary>
+        /// When non-null, a worker will not start a queued item while
+        /// this returns false. The worker rechecks about every 25 ms.
+        /// Used to hold a low-priority queue until a higher-priority
+        /// queue is quiet.
+        /// </summary>
+        public Func<bool> CanStartWork { get; set; }
+
+        /// <summary>
         /// Number of items currently in the queue (NOT counting work
         /// that's already running on a worker thread).
         /// </summary>
         public int QueueCount
         {
             get { lock (mLock) { return mQueue.Count; } }
+        }
+
+        /// <summary>
+        /// True when nothing is queued and no worker is inside a delegate.
+        /// </summary>
+        public bool IsQuiet
+        {
+            get
+            {
+                lock (mLock)
+                    return mQueue.Count == 0 && Volatile.Read(ref mActiveWorkerCount) == 0;
+            }
         }
 
         /// <summary>True iff <see cref="Start"/> has been called and Stop hasn't.</summary>
@@ -257,14 +277,22 @@ namespace EmoTracker.Core.Threading
         {
             while (!mShutdown)
             {
+                // Wait() returns immediately while the signal is already
+                // set, so a closed gate has to sleep instead of spinning.
+                if (CanStartWork != null && !CanStartWork())
+                {
+                    Thread.Sleep(25);
+                    continue;
+                }
+
                 mSignal.Wait();
                 if (mShutdown) break;
 
-                while (TryDequeue(out var entry))
+                while (!mShutdown && (CanStartWork == null || CanStartWork()))
                 {
-                    if (mShutdown) break;
+                    if (!TryDequeue(out var entry))
+                        break;
 
-                    Interlocked.Increment(ref mActiveWorkerCount);
                     try
                     {
                         entry.Work();
@@ -311,6 +339,7 @@ namespace EmoTracker.Core.Threading
                     mQueue.Remove(key);
                     mIndex.Remove(entry.Key);
                 }
+                Interlocked.Increment(ref mActiveWorkerCount);
                 return true;
             }
         }
